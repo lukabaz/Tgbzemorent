@@ -48,7 +48,7 @@ async def handle_support_text(update: Update, context: ContextTypes.DEFAULT_TYPE
                 logger.exception(f"❌ Ошибка при отправке ответа пользователю {user_id}: {e}")
                 admin_data = get_user_data(update.effective_chat.id)
                 admin_lang = get_user_language(update, admin_data)
-                 error_text = translations['support_reply_error'][admin_lang].format(error=str(e))
+                error_text = translations['support_reply_error'][admin_lang].format(error=str(e))
                 await update.message.reply_text(error_text)
         else:
             logger.debug("ℹ️ Not a reply to a support message, ignoring")
