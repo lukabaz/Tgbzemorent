@@ -22,7 +22,7 @@ async def handle_support_text(update: Update, context: ContextTypes.DEFAULT_TYPE
                 user_data = get_user_data(update.effective_chat.id)
                 lang = get_user_language(update, user_data)
                 error_text = translations['support_empty_reply'][lang]
-                await update.message.reply_text("❌ Пожалуйста, введите непустой текст ответа.")
+                await update.message.reply_text(error_text)
                 return
 
             logger.debug(f"📤 Sending reply to user {user_id}: {reply}")
@@ -42,7 +42,7 @@ async def handle_support_text(update: Update, context: ContextTypes.DEFAULT_TYPE
                 admin_data = get_user_data(update.effective_chat.id)
                 admin_lang = get_user_language(update, admin_data)
                 success_text = translations['support_reply_sent'][admin_lang]
-                await update.message.reply_text("✅ Ответ отправлен пользователю.")
+                await update.message.reply_text(success_text)
                 logger.info(f"✅ Ответ отправлен пользователю {user_id}: {reply}")
             except Exception as e:
                 logger.exception(f"❌ Ошибка при отправке ответа пользователю {user_id}: {e}")
