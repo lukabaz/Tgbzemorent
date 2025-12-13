@@ -5,7 +5,7 @@ import os
 SUPPORT_CHAT_ID = -1002977168139
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 REDIS_URL = os.getenv("REDIS_URL")
-WEBHOOK_URL = f"https://{os.getenv('VERCEL_URL', 'localhost:3001')}/{TELEGRAM_TOKEN}"  # Vercel auto VERCEL_URL, fallback for local
+ZEMO_WEBHOOK_URL = f"https://{os.getenv('VERCEL_URL', 'localhost:3001')}/{TELEGRAM_TOKEN}"  # Vercel auto VERCEL_URL, fallback for local
 PORT = int(os.getenv("PORT", 3001))  # Vercel PORT auto
 MONGO_URI = os.getenv("MONGO_URI")
 

@@ -11,10 +11,7 @@ from utils.logger import logger
 from authorization.subscription import welcome_new_user, handle_buttons, successful_payment, pre_checkout
 from authorization.support import handle_support_text
 from authorization.webhook import webhook_update
-from exchanges.binance import binance_ws
-from exchanges.bybit import bybit_ws
-from exchanges.okx import okx_ws
-from config import WEBHOOK_URL, SUPPORT_CHAT_ID
+from config import ZEMO_WEBHOOK_URL, SUPPORT_CHAT_ID
 
 
 async def handle(request):
@@ -70,10 +67,10 @@ async def main():
 
     runner = web.AppRunner(aio_app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 4012)))
+    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 4013)))
     await site.start()
 
-    logger.info(f"🚀 Bot running on port: {os.getenv('PORT', 4012)}")
+    logger.info(f"🚀 Bot running on port: {os.getenv('PORT', 4013)}")
 
     # Инициализация и запуск Telegram-приложения
     await app.initialize()
