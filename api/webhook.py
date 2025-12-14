@@ -53,7 +53,7 @@ async def telegram_webhook(request: Request):
             # Если пользователь только присоединился или активировал бота
             if status in ["member", "administrator"]:
                 is_new_user = True
-
+        logger.info(f"📩 Incoming update: {orjson.dumps(update_json).decode('utf-8')}")
         await application.process_update(update)
 
         async def shutdown_later(app, delay: float = 0.0):
@@ -63,9 +63,11 @@ async def telegram_webhook(request: Request):
 
         # Только для новых пользователей даем задержку
         if is_new_user:
-            asyncio.create_task(shutdown_later(application, delay=1.5))
+            logger.info("⏳ New user detected, delaying shutdown 5s to ensure welcome message and keyboard delivery")
+            asyncio.create_task(shutdown_later(application, delay=5.0))
         else:
-            asyncio.create_task(shutdown_later(application))
+            logger.info("⏳ Regular shutdown delayed 2s")
+            asyncio.create_task(shutdown_later(application, delay=2.0))
 
         return {"ok": True}
     
