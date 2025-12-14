@@ -40,6 +40,22 @@ async def welcome_new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cm = update.my_chat_member
     if cm.chat.type == "private" and cm.new_chat_member.status == "member": # and cm.old_chat_member.status == "kicked" для проверки на повторное вступление чтобы ограничить поток юзеров.
         user_data = get_user_data(cm.chat.id)
+        # Если данных нет — создаем ключ в Redis с telegram_id, language, username и user_agent
+        if not user_data:
+            redis_client.hset(
+                f"lead:{cm.chat.id}",
+                mapping={
+                    "telegram_id": str(cm.chat.id),
+                    "language": update.effective_user.language_code[:2],
+                    "username": update.effective_user.username or "",
+                    "user_agent": "telegram_bot"
+                }
+            )
+            redis_client.expire(f"lead:{cm.chat.id}", LEAD_TTL)
+            logger.info(f"🟢 Created lead key for user {cm.chat.id}")
+
+            # После создания, заново читаем данные
+            user_data = get_user_data(cm.chat.id)
         lang = get_user_language(update, user_data)
         welcome_text = translations['welcome'][lang]
         async def send_welcome():
