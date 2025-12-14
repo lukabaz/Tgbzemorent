@@ -10,7 +10,7 @@ from authorization.support import handle_support_text
 from utils.logger import logger
 from config import TELEGRAM_TOKEN, SUPPORT_CHAT_ID
 
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(docs_url="docs", redoc_url=None, openapi_url=None)
 
 async def build_application():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
