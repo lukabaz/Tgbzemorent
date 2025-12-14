@@ -28,7 +28,7 @@ def get_user_language(update: Update, user_data: dict) -> str:
 # Клавиатура настроек / поддержки
 def get_settings_keyboard(lang: str):
     return ReplyKeyboardMarkup([
-        [KeyboardButton(translations['settings_button'][lang], web_app={"url": "https://realtorsclientfilters.netlify.app/#"})],
+        [KeyboardButton(translations['settings_button'][lang], web_app={"url": "https://realtorclientfilters.netlify.app/#"})],
         [KeyboardButton(translations['support_button'][lang], web_app={"url": "https://realtorclientfilters.netlify.app/#/support"})]
     ], resize_keyboard=True)
 
