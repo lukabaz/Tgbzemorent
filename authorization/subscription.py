@@ -35,6 +35,39 @@ async def send_status_message(chat_id: int, context: ContextTypes.DEFAULT_TYPE, 
     async def send():
         return await context.bot.send_message(chat_id=chat_id, text=text, reply_markup=get_settings_keyboard(lang))
     await retry_on_timeout(send, chat_id=chat_id, message_text=text)
+# =========================
+# /start — ОСНОВНОЙ ВХОД
+# =========================
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    user_data = get_user_data(chat_id)
+
+    if not user_data:
+        redis_client.hset(
+            f"lead:{chat_id}",
+            mapping={
+                "telegram_id": str(chat_id),
+                "language": update.effective_user.language_code[:2],
+                "username": update.effective_user.username or "",
+                "user_agent": "telegram_bot",
+            }
+        )
+        redis_client.expire(f"lead:{chat_id}", LEAD_TTL)
+        logger.info(f"🟢 Created lead key for user {chat_id}")
+        user_data = get_user_data(chat_id)
+
+    lang = get_user_language(update, user_data)
+    welcome_text = translations["welcome"][lang]
+
+    async def send():
+        return await context.bot.send_message(
+            chat_id=chat_id,
+            text=welcome_text,
+            reply_markup=get_settings_keyboard(lang)
+        )
+
+    await retry_on_timeout(send, chat_id=chat_id, message_text=welcome_text)    
 
 async def welcome_new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cm = update.my_chat_member
@@ -61,5 +94,6 @@ async def welcome_new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async def send_welcome():
              return await context.bot.send_message(chat_id=cm.chat.id, text=welcome_text, reply_markup=get_settings_keyboard(lang))
         await retry_on_timeout(send_welcome, chat_id=cm.chat.id, message_text=welcome_text)
+
 
 
