@@ -3,9 +3,9 @@ import os
 import asyncio
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, PreCheckoutQueryHandler, ChatMemberHandler
+from telegram.ext import Application, MessageHandler, filters, ChatMemberHandler
 import orjson  # Для JSON parse (как в webhook.py)
-from authorization.subscription import save_user_data, welcome_new_user, handle_buttons, successful_payment, pre_checkout  # Импорт handlers из subscription (без handle_user_message)
+from authorization.subscription import welcome_new_user # Импорт handlers из subscription (без handle_user_message)
 from authorization.webhook import webhook_update  # , format_filters_response Импорт webhook_update и format
 from authorization.support import handle_support_text  # Отдельный импорт для handle_user_message
 from utils.logger import logger
@@ -32,9 +32,7 @@ async def build_application():
    
     application.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, webhook_update))
     application.add_handler(ChatMemberHandler(welcome_new_user, ChatMemberHandler.MY_CHAT_MEMBER))
-    application.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
-    application.add_handler(PreCheckoutQueryHandler(pre_checkout))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_buttons))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND))
 
     return application
 

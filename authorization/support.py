@@ -6,6 +6,10 @@ from utils.logger import logger
 from utils.translations import translations
 from authorization.subscription import get_user_data, get_user_language
 
+def detect_lang_from_update(update: Update) -> str:
+    lang = update.effective_user.language_code or "ru"
+    return lang if lang in ("ru", "en") else "ru"
+
 async def handle_support_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("📥 handle_support_text triggered")
     logger.debug(f"👤 From user: {update.effective_user.id}, chat: {update.effective_chat.id}")
