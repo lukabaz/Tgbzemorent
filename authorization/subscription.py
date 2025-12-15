@@ -63,32 +63,25 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # =========================
 # Welcome новый пользователь
 # =========================
-async def welcome_new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def welcome_new_user(update: Update, _context: ContextTypes.DEFAULT_TYPE):
     cm = update.my_chat_member
-    if cm.chat.type == "private" and cm.new_chat_member.status == "member":
-        chat_id = cm.chat.id
-        user_data = get_user_data(chat_id)
+    # Работаем ТОЛЬКО с private-чатом
+    if cm.chat.type != "private":
+        return
+    # Нас интересует только момент, когда бота РАЗРЕШИЛИ
+    if cm.new_chat_member.status != "member":
+        return    
+    chat_id = cm.chat.id
+    user_data = get_user_data(chat_id)
 
-        if not user_data:
-            save_lead(chat_id, {
-                "telegram_id": str(chat_id),
-                "language": update.effective_user.language_code[:2],
-                "username": update.effective_user.username or "",
-                "user_agent": "telegram_bot"
-            })
-            user_data = get_user_data(chat_id)
-
-        lang = get_user_language(update, user_data)
-        welcome_text = translations['welcome'][lang]
-
-        async def send_welcome():
-            return await context.bot.send_message(
-                chat_id=chat_id,
-                text=welcome_text,
-                reply_markup=get_settings_keyboard(lang)
-            )
-
-        await retry_on_timeout(send_welcome, chat_id=chat_id, message_text=welcome_text)
+    if not user_data:
+        save_lead(chat_id, {
+            "telegram_id": str(chat_id),
+            "language": update.effective_user.language_code[:2],
+            "username": update.effective_user.username or "",
+            "user_agent": "telegram_bot",
+        })
+    logger.info(f"👤 User registered via my_chat_member: {chat_id}")
 
 # =========================
 # Обработка текстовых кнопок
@@ -98,11 +91,10 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     user_data = get_user_data(chat_id)
     lang = get_user_language(update, user_data)
+    if text == translations['settings_button'][lang]:
+        pass
+    elif text == translations['support_button'][lang]:
+        pass
 
-    # Здесь можно добавить обработку текстовых кнопок
-    logger.info(f"👆 Button pressed: {text} by {chat_id}")
-    async def send_response():
-        return await context.bot.send_message(chat_id=chat_id, text=f"Вы нажали: {text}")
-    await retry_on_timeout(send_response, chat_id=chat_id, message_text=text)
 
 
