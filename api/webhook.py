@@ -1,3 +1,4 @@
+# api/webhook
 import os
 import asyncio
 from fastapi import FastAPI, Request, HTTPException
@@ -55,7 +56,7 @@ async def telegram_webhook(request: Request):
             await app.shutdown()
 
         is_new_user = getattr(update, "my_chat_member", None) and update.my_chat_member.new_chat_member.status in ["member", "administrator"]
-        asyncio.create_task(shutdown_later(application, delay=5.0 if is_new_user else 2.0))
+        asyncio.create_task(shutdown_later(application, delay=1.5 if is_new_user else 1.5))
 
         return {"ok": True}
 

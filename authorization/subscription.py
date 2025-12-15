@@ -1,3 +1,4 @@
+# authorization/subscription.py
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 from utils.redis_client import redis_client
