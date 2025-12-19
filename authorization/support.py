@@ -4,7 +4,22 @@ from telegram.ext import ContextTypes
 import re
 from utils.logger import logger
 from utils.translations import translations
-from authorization.subscription import get_user_data, get_user_language
+from utils.redis_client import redis_client  # подключаем Redis
+#from authorization.subscription import get_user_data, get_user_language
+
+# Временные функции вместо импорта из subscription.py
+def get_user_data(user_id: int) -> dict:
+    """Получаем данные пользователя из Redis"""
+    return redis_client.hgetall(f"zemo:{user_id}") or {}
+
+def get_user_language(update: Update, user_data: dict | None) -> str:
+    """Определяем язык пользователя"""
+    if user_data:
+        lang = user_data.get("language")
+        if lang in ("ru", "en"):
+            return lang
+    lang = (update.effective_user.language_code or "en")[:2]
+    return lang if lang in ("ru", "en") else "en"
 
 def detect_lang_from_update(update: Update) -> str:
     lang = update.effective_user.language_code or "ru"
