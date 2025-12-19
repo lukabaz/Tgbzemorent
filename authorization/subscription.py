@@ -36,7 +36,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "username": update.effective_user.username or None,
         "first_name": update.effective_user.first_name or "",
         "last_name": update.effective_user.last_name or "",
-        "photo_url": update.effective_user.photo_url or None
+        "photo_url": None  # ← Временно None, фото из WebApp initData
     }
 
     lang = update.effective_user.language_code[:2] if update.effective_user.language_code[:2] in ['ru', 'en'] else 'en'
