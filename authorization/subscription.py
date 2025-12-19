@@ -1,101 +1,102 @@
-# authorization/subscription.py
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
-from utils.redis_client import redis_client
 from utils.logger import logger
 from utils.telegram_utils import retry_on_timeout
 from utils.translations import translations
+import urllib.parse
+import orjson
 
-LEAD_TTL = int(60 * 60 * 24 * 90)  # 3 месяца
+def build_webapp_url(base_url: str, tg_user: dict) -> str:
+    """
+    Формирует URL фронтенда с initData для Telegram WebApp.
+    """
+    params = {"user": orjson.dumps(tg_user).decode("utf-8")}
+    return f"{base_url}?{urllib.parse.urlencode(params)}"
 
-# Сохранение данных пользователя в Redis
-def save_lead(chat_id: int, data: dict):
-    key = f"lead:{chat_id}"
-    redis_client.hset(key, mapping=data)
-    redis_client.expire(key, LEAD_TTL)
-    logger.info(f"🧲 Lead saved: {key}")
+def get_settings_keyboard(lang: str, tg_user: dict):
+    base_url = "https://realtorclientfilters.netlify.app/#/"
+    webapp_url_main = build_webapp_url(base_url, tg_user)
+    webapp_url_support = build_webapp_url(base_url + "support", tg_user)
 
-# Получение данных пользователя из Redis
-def get_user_data(chat_id: int):
-    key = f"lead:{chat_id}"
-    return redis_client.hgetall(key)
-
-# Определение языка пользователя
-def get_user_language(update: Update, user_data: dict) -> str:
-    lang = user_data.get('language', update.effective_user.language_code[:2])
-    logger.info(f"Selected language for chat_id={update.effective_chat.id}: {lang}")
-    return lang if lang in ['ru', 'en'] else 'en'
-
-# Клавиатура настроек / поддержки
-def get_settings_keyboard(lang: str):
     return ReplyKeyboardMarkup([
-        [KeyboardButton(translations['settings_button'][lang], web_app={"url": "https://realtorclientfilters.netlify.app/#/"})],
-        [KeyboardButton(translations['support_button'][lang], web_app={"url": "https://realtorclientfilters.netlify.app/#/support"})]
+        [KeyboardButton(translations['settings_button'][lang], web_app={"url": webapp_url_main})],
+        [KeyboardButton(translations['support_button'][lang], web_app={"url": webapp_url_support})]
     ], resize_keyboard=True)
 
-# =========================
-# /start — основной вход
-# =========================
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Приветственное сообщение и клавиатура для Telegram WebApp.
+    Кнопки ведут сразу на фронт с initData.
+    """
     chat_id = update.effective_chat.id
-    user_data = get_user_data(chat_id)
 
-    if not user_data:
-        save_lead(chat_id, {
-            "telegram_id": str(chat_id),
-            "language": update.effective_user.language_code[:2],
-            "username": update.effective_user.username or "",
-            "user_agent": "telegram_bot",
-        })
-        user_data = get_user_data(chat_id)
+    tg_user = {
+        "id": update.effective_user.id,
+        "username": update.effective_user.username or None,
+        "first_name": update.effective_user.first_name or "",
+        "last_name": update.effective_user.last_name or "",
+        "photo_url": update.effective_user.photo_url or None
+    }
 
-    lang = get_user_language(update, user_data)
+    lang = update.effective_user.language_code[:2] if update.effective_user.language_code[:2] in ['ru', 'en'] else 'en'
     welcome_text = translations["welcome"][lang]
+
+    keyboard = get_settings_keyboard(lang, tg_user)
 
     async def send():
         return await context.bot.send_message(
             chat_id=chat_id,
             text=welcome_text,
-            reply_markup=get_settings_keyboard(lang)
+            reply_markup=keyboard
         )
 
     await retry_on_timeout(send, chat_id=chat_id, message_text=welcome_text)
+    logger.info(f"👋 Sent welcome message and WebApp keyboard to chat_id={chat_id}")
 
-# =========================
-# Welcome новый пользователь
-# =========================
 async def welcome_new_user(update: Update, _context: ContextTypes.DEFAULT_TYPE):
+    """
+    Новый пользователь через my_chat_member.
+    """
     cm = update.my_chat_member
-    # Работаем ТОЛЬКО с private-чатом
-    if cm.chat.type != "private":
+    if cm.chat.type != "private" or cm.new_chat_member.status != "member":
         return
-    # Нас интересует только момент, когда бота РАЗРЕШИЛИ
-    if cm.new_chat_member.status != "member":
-        return    
-    chat_id = cm.chat.id
-    user_data = get_user_data(chat_id)
+    logger.info(f"👤 User allowed the bot: chat_id={cm.chat.id}")
 
-    if not user_data:
-        save_lead(chat_id, {
-            "telegram_id": str(chat_id),
-            "language": update.effective_user.language_code[:2],
-            "username": update.effective_user.username or "",
-            "user_agent": "telegram_bot",
-        })
-    logger.info(f"👤 User registered via my_chat_member: {chat_id}")
-
-# =========================
-# Обработка текстовых кнопок
-# =========================
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Минимальные изменения — все кнопки ведут на WebApp, действия на фронте.
+    """
     chat_id = update.effective_chat.id
     text = update.message.text
-    user_data = get_user_data(chat_id)
-    lang = get_user_language(update, user_data)
-    if text == translations['settings_button'][lang]:
-        pass
-    elif text == translations['support_button'][lang]:
-        pass
+
+    tg_user = {
+        "id": update.effective_user.id,
+        "username": update.effective_user.username or None,
+        "first_name": update.effective_user.first_name or "",
+        "last_name": update.effective_user.last_name or "",
+        "photo_url": update.effective_user.photo_url or None
+    }
+
+    lang = update.effective_user.language_code[:2] if update.effective_user.language_code[:2] in ['ru', 'en'] else 'en'
+
+    if text in [translations['settings_button'][lang], translations['support_button'][lang]]:
+        base_url = "https://realtorclientfilters.netlify.app/#/"
+        if text == translations['support_button'][lang]:
+            base_url += "support"
+
+        webapp_url = build_webapp_url(base_url, tg_user)
+
+        async def send():
+            return await context.bot.send_message(
+                chat_id=chat_id,
+                text="Открываем WebApp...",
+                reply_markup=ReplyKeyboardMarkup(
+                    [[KeyboardButton(text, web_app={"url": webapp_url})]],
+                    resize_keyboard=True
+                )
+            )
+        await retry_on_timeout(send, chat_id=chat_id)
+        logger.info(f"🔗 Sent WebApp link for chat_id={chat_id}, button={text}")
 
 
 
